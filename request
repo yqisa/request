@@ -1,0 +1,77 @@
+exports.default = request;
+BaseUrl = 'https://www.**.com';
+/**
+ * 全局请求方法
+ * @param param
+ *  param.url 如果本身是完整链接, 则不补全, 否则使用 defaultServerAddress 补全
+ *  param.method 默认 'GET'
+ *  param.data 提交的参数
+ *  param.header 自定header object
+ * @returns {Promise}
+ */
+
+function request(param) {
+  var _this = this;
+
+  return new Promise(function (resolve, reject) {
+    if (!param.url && Debug) {
+      console.error("need url");
+      return;
+    }
+    var url = !/((http:)|(https:))/.test(param.url) ? '' + BaseUrl + param.url : param.url;
+    var requestData = {
+      url: url,
+      method: param.method ? param.method : 'GET',
+      header: {
+        'content-type': 'application/json'
+      },
+      success: function success(res) {
+        wx.hideNavigationBarLoading();
+        if (res.data.code == 200) {
+          resolve(res.data);
+        } else if (res.data.code == 401) {
+          // 清空本地数据
+          // wx.reLaunch({
+          //   url: '/pages/index/index'
+          // });
+          // return
+        } else {
+          var msg = void 0;
+          if (res.data && res.data.message) {
+            msg = res.data.msg;
+          } else {
+            msg = res.data.message;
+          }
+          if (Debug) {
+            console.error('\u8BF7\u6C42 ' + param.url + ' \u9519\u8BEF, \u9519\u8BEF\u4FE1\u606F: ' + msg);
+          }
+          reject(res.data);
+        }
+      },
+      fail: function fail(e) {
+        wx.hideNavigationBarLoading();
+        if (Debug) {
+          console.error(e.errMsg);
+        }
+        _this.showError(e.errMsg);
+        reject(e);
+      }
+    };
+    if (param.data) {
+      requestData.data = param.data;
+    }
+    if (param.header) {
+      _underscore2.default.each(Object.keys(param.header), function (value, key) {
+        requestData.header[key] = value;
+      });
+    }
+    // if (this.globalData.token) {
+    //   requestData.header.Authorization = `Bearer ${this.globalData.token}`
+    // }
+    if (Debug) {
+      //(0, _util.logInfo)(param.url, '发起请求:');
+    }
+    wx.showNavigationBarLoading();
+    wx.request(requestData);
+  });
+}
